@@ -14,14 +14,28 @@ The game speeds up as you go. Birds appear after 250 points, and day turns to ni
 
 ## Saved data
 
-Everything is stored in the browser's `localStorage` under the key `dinoDash.v1`:
+**On each device** (`localStorage`, key `dinoDash.v1`): best score, games played, average score, top 5 runs with dates, sound on/off, the player's name, and the best score already posted to the world board. **Reset saved data** clears the scores on that device only.
 
-- best score
-- games played and average score
-- top 5 runs, with date and time
-- sound on/off
+**World Top 10** (Supabase): once a player saves a name, each new personal best is posted automatically. If posting fails, a **Post my best** button appears so the player can retry. The board shows each name's best score and refreshes every minute when no game is running. Rows marked *demo* are sample data.
 
-Scores are kept per browser and per device. Use **Reset saved data** on the page to clear them.
+### Supabase setup
+
+Project `zzqkkecgnrlgxyevwfbx`. The game calls the REST API directly with `fetch`, so no library is loaded. The URL and publishable key are at the top of the leaderboard code in `index.html`. The publishable key is meant to be public.
+
+| Object | Purpose |
+| --- | --- |
+| `dino_scores` table | `id`, `name` (1–16 chars: letters, numbers, space, `.` `_` `-`), `score` (1–99,999), `is_example`, `created_at` |
+| `dino_leaderboard` view | Best score per name (case-insensitive), `security_invoker` |
+
+Access through the public key: anyone can **read** the board and **insert** a `name` and `score`. Nobody can edit or delete rows, set `is_example`, or choose `created_at`.
+
+**Limits:** there is no sign-in, so anyone can post any name and any score up to 99,999 (for example by calling the API directly). This is fine for a casual game. Remove obviously fake rows in the Supabase dashboard if needed.
+
+To remove the demo scores:
+
+```sql
+delete from public.dino_scores where is_example;
+```
 
 ## Project files
 
@@ -31,7 +45,7 @@ favicon.svg   browser tab icon
 vercel.json   static hosting headers for Vercel
 ```
 
-There is no build step and there are no dependencies. The only external request is the Fredoka font from Google Fonts, and the game falls back to a system font when offline.
+There is no build step and there are no dependencies. The page loads the Fredoka font from Google Fonts and calls Supabase for the world board. Offline, the game still works with a system font and device-only scores.
 
 ## Deploy on Vercel
 
